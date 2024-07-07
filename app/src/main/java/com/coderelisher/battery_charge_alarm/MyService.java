@@ -50,7 +50,7 @@ public class MyService extends Service {
 
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("Battery Charge Alarm")
-                .setContentText("Service is running... Full Charge Limit is " + HttpClient.max)
+                .setContentText("Off=" + HttpClient.max+" On="+HttpClient.min)
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setContentIntent(pendingIntent)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT);

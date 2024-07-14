@@ -10,6 +10,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.media.MediaPlayer;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.BatteryManager;
@@ -26,16 +27,26 @@ public class MyService extends Service {
 
     private static final String CHANNEL_ID = "ForegroundServiceChannel";
     float battery;
+    private MediaPlayer mediaPlayer;
+    private ChargerConnectionReceiver chargerConnectionReceiver = new ChargerConnectionReceiver();
+    private boolean isConnected = false;
 
     @Override
     public void onCreate() {
         super.onCreate();
+
+        mediaPlayer = MediaPlayer.create(this, R.raw.beep); // replace 'your_audio_file' with the actual file name
+        mediaPlayer.setLooping(true);
+
         createNotificationChannel();
 
         // Show a Toast message when the service is created
-        Toast.makeText(getApplicationContext(), "Service Created", Toast.LENGTH_SHORT).show();
+        Toast.makeText(getApplicationContext(), "Battery Charge Alarm Service Created", Toast.LENGTH_SHORT).show();
         IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
         registerReceiver(batteryReceiver, ifilter);
+
+        IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+        registerReceiver(chargerConnectionReceiver, filter);
 
         // createNotificationChannel();
     }
@@ -108,6 +119,20 @@ public class MyService extends Service {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
+    @Override
+    public void onDestroy() {
+        if (mediaPlayer != null) {
+            mediaPlayer.stop();
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
+        super.onDestroy();
+        unregisterReceiver(batteryReceiver);
+        unregisterReceiver(chargerConnectionReceiver);
+        Intent broadcastIntent = new Intent("com.coderelisher.battery_charge_alarm.MyService");
+        sendBroadcast(broadcastIntent);
+    }
+
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             CharSequence name = "Foreground Service Channel";
@@ -133,8 +158,11 @@ public class MyService extends Service {
 
             //showNotification("Battery",""+HttpClient.max,null,new Intent(getApplicationContext(), MainActivity.class));
 
-            if(batteryPct >= HttpClient.max){
+            if(batteryPct >= HttpClient.max && isConnected){
                 // showNotification("Battery","Battery full limit reached",null,new Intent(getApplicationContext(), MainActivity.class));
+                if (mediaPlayer != null && !mediaPlayer.isPlaying()) {
+                    mediaPlayer.start();
+                }
                 new Thread(){
                     @Override
                     public void run() {
@@ -146,7 +174,7 @@ public class MyService extends Service {
                 }.start();
             }
 
-            if(batteryPct <= HttpClient.min){
+            if(batteryPct <= HttpClient.min && !isConnected){
                 // showNotification("Battery","Battery full limit reached",null,new Intent(getApplicationContext(), MainActivity.class));
                 new Thread(){
                     @Override
@@ -162,4 +190,23 @@ public class MyService extends Service {
             // tvfirst.setText(String.format("Battery Percentage: %.2f%%", batteryPct));
         }
     };
+
+    public class ChargerConnectionReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+            boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
+                    status == BatteryManager.BATTERY_STATUS_FULL;
+
+            if (isCharging) {
+                // Log.d("ChargerConnectionReceiver", "Device is charging");
+                Toast.makeText(getApplicationContext(), "Charger Connected", Toast.LENGTH_SHORT).show();
+                isConnected = true;
+            } else {
+                // Log.d("ChargerConnectionReceiver", "Device is not charging");
+                Toast.makeText(getApplicationContext(), "Charger Not Connected", Toast.LENGTH_SHORT).show();
+                isConnected = false;
+            }
+        }
+    }
 }

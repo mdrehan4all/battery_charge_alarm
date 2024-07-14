@@ -2,14 +2,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission
-        android:name="android.permission.BATTERY_STATS"
-        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.BATTERY_STATS" tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
-
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WRITE_INTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_INTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.NOTIFICATION_SERVICE" />
 
     <application
         android:allowBackup="true"
@@ -27,6 +27,13 @@
             android:enabled="true"
             android:exported="true"
             android:foregroundServiceType="specialUse"></service>
+        <receiver
+            android:name=".MyServiceRestartReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.coderelisher.battery_charge_alarm.MyService" />
+            </intent-filter>
+        </receiver>
 
         <activity
             android:name=".MainActivity"

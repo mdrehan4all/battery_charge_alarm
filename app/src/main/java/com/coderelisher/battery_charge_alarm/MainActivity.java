@@ -1,5 +1,6 @@
 package com.coderelisher.battery_charge_alarm;
 
+import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -30,8 +31,7 @@ import java.io.File;
 public class MainActivity extends AppCompatActivity {
 
     TextView tvfirst;
-    Button btn_start, btn_on, btn_off;
-    EditText et_percent_off, et_percent_on;
+    Button btn_start, btn_settings;
     boolean active = false;
     InternalStorage is=new InternalStorage(MainActivity.this);
 
@@ -51,15 +51,20 @@ public class MainActivity extends AppCompatActivity {
         // ID's
         tvfirst = (TextView) findViewById(R.id.tv_first);
         btn_start = (Button) findViewById(R.id.btn_start);
-        btn_on = (Button) findViewById(R.id.btn_on);
-        btn_off = (Button) findViewById(R.id.btn_off);
-        et_percent_off = (EditText) findViewById(R.id.et_percent);
-        et_percent_on = (EditText) findViewById(R.id.et_percent_on);
+        btn_settings = (Button)findViewById(R.id.btn_settings);
 
         // Logic
         IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
         registerReceiver(batteryReceiver, ifilter);
 
+        // Check if service is running or not and change button name
+        if(isMyServiceRunning(MyService.class)){
+            btn_start.setText("Stop");
+            active = true;
+        }else{
+            btn_start.setText("Start");
+            active = false;
+        }
 
         File file = this.getFileStreamPath("max.txt");
         if(!file.exists()){
@@ -72,20 +77,15 @@ public class MainActivity extends AppCompatActivity {
 
         String max = is.read("max.txt");
         String min = is.read("min.txt");
-        et_percent_off.setText(max);
-        et_percent_on.setText(min);
 
         // Toast.makeText(this, min+" - "+max, Toast.LENGTH_SHORT).show();
 
+        Intent broadcastIntent = new Intent(".MyServiceRestartReceiver");
+        sendBroadcast(broadcastIntent);
 
         btn_start.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                is.write("max.txt", et_percent_off.getText().toString());
-                is.write("min.txt", et_percent_on.getText().toString());
-
-                HttpClient.max = Integer.parseInt(is.read("max.txt"));
-                HttpClient.min = Integer.parseInt(is.read("min.txt"));
 
                 if(!active){
                     Intent serviceIntent = new Intent(MainActivity.this, MyService.class);
@@ -102,35 +102,15 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        btn_on.setOnClickListener(new View.OnClickListener() {
+
+        btn_settings.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                new Thread(){
-                    @Override
-                    public void run() {
-                        super.run();
-                        try {
-                            HttpClient.sendGet("https://ugoods.in/api/romyai/device.php?switch=switch0&value=0");
-                        }catch (Exception e){}
-                    }
-                }.start();
+                Intent intent = new Intent(MainActivity.this, Settings.class);
+                startActivity(intent);
             }
         });
 
-        btn_off.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                new Thread(){
-                    @Override
-                    public void run() {
-                        super.run();
-                        try {
-                            HttpClient.sendGet("https://ugoods.in/api/romyai/device.php?switch=switch0&value=1024");
-                        }catch (Exception e){}
-                    }
-                }.start();
-            }
-        });
     }
 
     private BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
@@ -166,5 +146,15 @@ public class MainActivity extends AppCompatActivity {
         } else {
             // Handle older versions if necessary
         }
+    }
+
+    public boolean isMyServiceRunning(Class<MyService> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
     }
 }

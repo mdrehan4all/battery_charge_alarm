@@ -28,25 +28,37 @@ public class MyService extends Service {
     private static final String CHANNEL_ID = "ForegroundServiceChannel";
     float battery;
     private MediaPlayer mediaPlayer;
-    private ChargerConnectionReceiver chargerConnectionReceiver = new ChargerConnectionReceiver();
-    private boolean isConnected = false;
+    private boolean isConnected = true;
+    InternalStorage is;
+    Context context;
+    int min, max;
+    String hook_on, hook_off;
 
     @Override
     public void onCreate() {
         super.onCreate();
+
+        context = getApplicationContext();
+        is = new InternalStorage(getApplicationContext());
+        min = Integer.parseInt(is.read("min.txt"));
+        max = Integer.parseInt(is.read("max.txt"));
+        hook_on = is.read("hook_on.txt");
+        hook_off = is.read("hook_off.txt");
 
         mediaPlayer = MediaPlayer.create(this, R.raw.beep); // replace 'your_audio_file' with the actual file name
         mediaPlayer.setLooping(true);
 
         createNotificationChannel();
 
+
         // Show a Toast message when the service is created
-        Toast.makeText(getApplicationContext(), "Battery Charge Alarm Service Created", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(getApplicationContext(), "Battery Charge Alarm Service Created", Toast.LENGTH_SHORT).show();
+
         IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
         registerReceiver(batteryReceiver, ifilter);
 
-        IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-        registerReceiver(chargerConnectionReceiver, filter);
+        //IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+        //registerReceiver(chargerConnectionReceiver, filter);
 
         // createNotificationChannel();
     }
@@ -61,7 +73,7 @@ public class MyService extends Service {
 
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("Battery Charge Alarm")
-                .setContentText("Off=" + HttpClient.max+" On="+HttpClient.min)
+                .setContentText("Off=" + max+" On="+min)
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setContentIntent(pendingIntent)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT);
@@ -128,9 +140,11 @@ public class MyService extends Service {
         }
         super.onDestroy();
         unregisterReceiver(batteryReceiver);
-        unregisterReceiver(chargerConnectionReceiver);
-        Intent broadcastIntent = new Intent("com.coderelisher.battery_charge_alarm.MyService");
+        //unregisterReceiver(chargerConnectionReceiver);
+        Intent broadcastIntent = new Intent("com.coderelisher.battery_charge_alarm.MyServiceRestartReceiver");
         sendBroadcast(broadcastIntent);
+        //Intent restartServiceIntent = new Intent(getApplicationContext(), MyService.class);
+        //startService(restartServiceIntent);
     }
 
     private void createNotificationChannel() {
@@ -157,8 +171,21 @@ public class MyService extends Service {
             battery = batteryPct;
 
             //showNotification("Battery",""+HttpClient.max,null,new Intent(getApplicationContext(), MainActivity.class));
+            int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+            boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL;
+            isConnected = isCharging;
 
-            if(batteryPct >= HttpClient.max && isConnected){
+            if(!isConnected){
+                if (mediaPlayer != null) {
+                    mediaPlayer.stop();
+                }
+            }else{
+
+            }
+
+            Toast.makeText(context, "Changed "+isConnected, Toast.LENGTH_SHORT).show();
+
+            if(batteryPct >= max && isConnected){
                 // showNotification("Battery","Battery full limit reached",null,new Intent(getApplicationContext(), MainActivity.class));
                 if (mediaPlayer != null && !mediaPlayer.isPlaying()) {
                     mediaPlayer.start();
@@ -168,20 +195,22 @@ public class MyService extends Service {
                     public void run() {
                         super.run();
                         try {
-                            HttpClient.sendGet("https://ugoods.in/api/romyai/device.php?switch=switch0&value=1024");
+                            //HttpClient.sendGet("https://ugoods.in/api/romyai/device.php?switch=switch0&value=1024");
+                            HttpClient.sendGet(hook_off);
                         }catch (Exception e){}
                     }
                 }.start();
             }
 
-            if(batteryPct <= HttpClient.min && !isConnected){
+            if(batteryPct <= min && !isConnected){
                 // showNotification("Battery","Battery full limit reached",null,new Intent(getApplicationContext(), MainActivity.class));
                 new Thread(){
                     @Override
                     public void run() {
                         super.run();
                         try {
-                            HttpClient.sendGet("https://ugoods.in/api/romyai/device.php?switch=switch0&value=0");
+                            //HttpClient.sendGet("https://ugoods.in/api/romyai/device.php?switch=switch0&value=0");
+                            HttpClient.sendGet(hook_on);
                         }catch (Exception e){}
                     }
                 }.start();
@@ -191,12 +220,11 @@ public class MyService extends Service {
         }
     };
 
-    public class ChargerConnectionReceiver extends BroadcastReceiver {
+    /*private BroadcastReceiver chargerConnectionReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
-            boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
-                    status == BatteryManager.BATTERY_STATUS_FULL;
+            boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL;
 
             if (isCharging) {
                 // Log.d("ChargerConnectionReceiver", "Device is charging");
@@ -208,5 +236,5 @@ public class MyService extends Service {
                 isConnected = false;
             }
         }
-    }
+    };*/
 }

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".Settings">
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="20dp">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Settings"
+                android:textSize="32dp"
+                android:textAlignment="center"/>
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="20dp"/>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Max percentage for alarm (Power off)"/>
+            <EditText
+                android:id="@+id/et_maxp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Max Percentage"/>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Min percentage for alarm (Power on)"/>
+            <EditText
+                android:id="@+id/et_minp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Min Percentage"/>
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="20dp"/>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Power off hook (URL)"/>
+            <EditText
+                android:id="@+id/et_hook_off"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Power off hook"/>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Power on hook (URL)"/>
+            <EditText
+                android:id="@+id/et_hook_on"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Power on hook"/>
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:orientation="horizontal">
+                <Button
+                    android:id="@+id/btn_hook_on"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Power On"
+                    android:layout_marginEnd="2dp"/>
+                <Button
+                    android:id="@+id/btn_hook_off"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Power Off"
+                    android:layout_marginStart="2dp"/>
+            </LinearLayout>
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="20dp"/>
+            <Button
+                android:id="@+id/btn_save_settings"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Save Settings"/>
+
+            <Button
+                android:id="@+id/btn_settings_back"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:backgroundTint="#AAAAAA"
+                android:text="Back" />
+        </LinearLayout>
+    </ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

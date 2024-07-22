@@ -32,7 +32,7 @@ public class MainActivity extends AppCompatActivity {
 
     TextView tvfirst;
     Button btn_start, btn_settings;
-    boolean active = false;
+    int status = 0;
     InternalStorage is=new InternalStorage(MainActivity.this);
 
     @Override
@@ -57,15 +57,6 @@ public class MainActivity extends AppCompatActivity {
         IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
         registerReceiver(batteryReceiver, ifilter);
 
-        // Check if service is running or not and change button name
-        if(isMyServiceRunning(MyService.class)){
-            btn_start.setText("Stop");
-            active = true;
-        }else{
-            btn_start.setText("Start");
-            active = false;
-        }
-
         File file = this.getFileStreamPath("max.txt");
         if(!file.exists()){
             is.write("max.txt", "96");
@@ -79,24 +70,37 @@ public class MainActivity extends AppCompatActivity {
         String min = is.read("min.txt");
 
         // Toast.makeText(this, min+" - "+max, Toast.LENGTH_SHORT).show();
+        //Intent broadcastIntent = new Intent(".MyServiceRestartReceiver");
+        //sendBroadcast(broadcastIntent);
+        MyServiceRestartReceiver myServiceRestartReceiver=new MyServiceRestartReceiver();
+        IntentFilter ifilter2 = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+        registerReceiver(myServiceRestartReceiver, ifilter2);
 
-        Intent broadcastIntent = new Intent(".MyServiceRestartReceiver");
-        sendBroadcast(broadcastIntent);
+
+        File filestatus = this.getFileStreamPath("status.txt");
+        if(!filestatus.exists()){
+            is.write("status.txt", "0");
+        }
+        status = Integer.parseInt(is.read("status.txt"));
+        if(status == 1) {
+            btn_start.setText("Stop");
+        }else{
+            btn_start.setText("Start");
+        }
 
         btn_start.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-                if(!active){
-                    Intent serviceIntent = new Intent(MainActivity.this, MyService.class);
-                    startService(serviceIntent);
-                    active = true;
-                    btn_start.setText("Stop");
-                }else{
-                    Intent serviceIntent = new Intent(MainActivity.this, MyService.class);
-                    stopService(serviceIntent);
-                    active = false;
+                status = Integer.parseInt(is.read("status.txt"));
+                Toast.makeText(MainActivity.this, "Wait few seconds...", Toast.LENGTH_SHORT).show();
+                if(status == 1){
                     btn_start.setText("Start");
+                    is.write("status.txt", "0");
+                    status = 0;
+                }else{
+                    btn_start.setText("Stop");
+                    is.write("status.txt", "1");
+                    status = 1;
                 }
 
             }
@@ -120,6 +124,14 @@ public class MainActivity extends AppCompatActivity {
             int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
             float batteryPct = level / (float) scale * 100;
             tvfirst.setText(String.format("Battery Percentage: %.2f%%", batteryPct));
+            // Check if service is running or not and change button name
+//            if(isMyServiceRunning(MyService.class)){
+//                btn_start.setText("Stop");
+//                status = 1;
+//            }else{
+//                btn_start.setText("Start");
+//                status = 0;
+//            }
         }
     };
 

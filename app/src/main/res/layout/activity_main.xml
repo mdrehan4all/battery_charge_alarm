@@ -19,6 +19,7 @@
         android:layout_marginEnd="0dp"
         android:layout_marginBottom="0dp"
         android:gravity="center"
+        android:padding="20dp"
         android:orientation="vertical">
 
         <TextView
@@ -43,6 +44,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Settings"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="For the proper functioning of this app, make sure you allow notification permission and unrestricted battery usage from the app info.\n\nSet max percentage for full charge from settings.\n\nPress Start button to start the app as bettery full charge alarm."/>
     </LinearLayout>
 
 </RelativeLayout>

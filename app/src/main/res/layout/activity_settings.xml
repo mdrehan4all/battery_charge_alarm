@@ -27,24 +27,31 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Max percentage for alarm (Power off)"/>
+                android:text="Max percentage for alarm and for power off"/>
             <EditText
                 android:id="@+id/et_maxp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Max Percentage"/>
+
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Min percentage for alarm (Power on)"/>
+                android:textColor="#ff0000"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp"
+                android:text="Min percentage for power on, power off hook (url), and the power on hook (url) are for smart switches. If you are not using any smart switch, leave other fields as they are and only set Max percentage for the alarm and press save settings."
+                android:textSize="11dp"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Min percentage for power on"/>
             <EditText
                 android:id="@+id/et_minp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Min Percentage"/>
-            <Space
-                android:layout_width="match_parent"
-                android:layout_height="20dp"/>
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

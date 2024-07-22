@@ -11,6 +11,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.MediaPlayer;
+import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.BatteryManager;
@@ -27,12 +28,14 @@ public class MyService extends Service {
 
     private static final String CHANNEL_ID = "ForegroundServiceChannel";
     float battery;
-    private MediaPlayer mediaPlayer;
+//    private static MediaPlayer mediaPlayer;
     private boolean isConnected = true;
     InternalStorage is;
     Context context;
     int min, max;
     String hook_on, hook_off;
+    Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+    Ringtone ringtone;
 
     @Override
     public void onCreate() {
@@ -40,13 +43,12 @@ public class MyService extends Service {
 
         context = getApplicationContext();
         is = new InternalStorage(getApplicationContext());
-        min = Integer.parseInt(is.read("min.txt"));
-        max = Integer.parseInt(is.read("max.txt"));
-        hook_on = is.read("hook_on.txt");
-        hook_off = is.read("hook_off.txt");
 
-        mediaPlayer = MediaPlayer.create(this, R.raw.beep); // replace 'your_audio_file' with the actual file name
-        mediaPlayer.setLooping(true);
+//         mediaPlayer = MediaPlayer.create(context, R.raw.beep); // replace 'your_audio_file' with the actual file name
+//         mediaPlayer.setLooping(true);
+
+        ringtone = RingtoneManager.getRingtone(getApplicationContext(), notification);
+        // ringtone.play();
 
         createNotificationChannel();
 
@@ -63,9 +65,11 @@ public class MyService extends Service {
         // createNotificationChannel();
     }
 
-    @SuppressLint("ForegroundServiceType")
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
+    public void shownotif(){
+        min = Integer.parseInt(is.read("min.txt"));
+        max = Integer.parseInt(is.read("max.txt"));
+        hook_on = is.read("hook_on.txt");
+        hook_off = is.read("hook_off.txt");
 
         Intent notificationIntent = new Intent(this, MainActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(this,
@@ -73,7 +77,30 @@ public class MyService extends Service {
 
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("Battery Charge Alarm")
-                .setContentText("Off=" + max+" On="+min)
+                .setContentText("Alarm Percentage is " + max)
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setContentIntent(pendingIntent)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+
+        startForeground(1, notificationBuilder.build());
+    }
+
+    @SuppressLint("ForegroundServiceType")
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+
+        min = Integer.parseInt(is.read("min.txt"));
+        max = Integer.parseInt(is.read("max.txt"));
+        hook_on = is.read("hook_on.txt");
+        hook_off = is.read("hook_off.txt");
+
+        Intent notificationIntent = new Intent(this, MainActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this,
+                0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
+
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("Battery Charge Alarm")
+                .setContentText("Alarm Percentage is " + max)
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setContentIntent(pendingIntent)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT);
@@ -133,18 +160,19 @@ public class MyService extends Service {
 
     @Override
     public void onDestroy() {
-        if (mediaPlayer != null) {
-            mediaPlayer.stop();
-            mediaPlayer.release();
-            mediaPlayer = null;
-        }
         super.onDestroy();
+
+//        if (mediaPlayer != null) {
+//            mediaPlayer.stop();
+//            mediaPlayer.release();
+//            mediaPlayer = null;
+//        }
+        ringtone.stop();
+
         unregisterReceiver(batteryReceiver);
-        //unregisterReceiver(chargerConnectionReceiver);
-        Intent broadcastIntent = new Intent("com.coderelisher.battery_charge_alarm.MyServiceRestartReceiver");
-        sendBroadcast(broadcastIntent);
-        //Intent restartServiceIntent = new Intent(getApplicationContext(), MyService.class);
-        //startService(restartServiceIntent);
+        MyServiceRestartReceiver myServiceRestartReceiver=new MyServiceRestartReceiver();
+        IntentFilter ifilter2 = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+        registerReceiver(myServiceRestartReceiver, ifilter2);
     }
 
     private void createNotificationChannel() {
@@ -170,53 +198,72 @@ public class MyService extends Service {
             float batteryPct = level / (float) scale * 100;
             battery = batteryPct;
 
+            min = Integer.parseInt(is.read("min.txt"));
+            max = Integer.parseInt(is.read("max.txt"));
+            hook_on = is.read("hook_on.txt");
+            hook_off = is.read("hook_off.txt");
+
+
             //showNotification("Battery",""+HttpClient.max,null,new Intent(getApplicationContext(), MainActivity.class));
             int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
             boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL;
             isConnected = isCharging;
 
             if(!isConnected){
-                if (mediaPlayer != null) {
-                    mediaPlayer.stop();
+//                if (mediaPlayer != null) {
+//                    mediaPlayer.pause();
+//                }
+                ringtone.stop();
+            }
+
+            // Toast.makeText(context, "Changed "+isConnected, Toast.LENGTH_SHORT).show();
+            int startstatus = Integer.parseInt(is.read("status.txt"));
+
+            if(startstatus == 1) {
+                // Toast.makeText(context, "Battery Charge Alarm is Running", Toast.LENGTH_SHORT).show();
+
+                if (batteryPct >= max && isConnected) {
+                    //Toast.makeText(context, "Off", Toast.LENGTH_SHORT).show();
+                    // showNotification("Battery","Battery full limit reached",null,new Intent(getApplicationContext(), MainActivity.class));
+//                    if (mediaPlayer != null && !mediaPlayer.isPlaying()) {
+//                        mediaPlayer.start();
+//                    }
+                    shownotif();
+                    ringtone.play();
+
+                    new Thread() {
+                        @Override
+                        public void run() {
+                            super.run();
+                            try {
+                                //HttpClient.sendGet("https://ugoods.in/api/romyai/device.php?switch=switch0&value=1024");
+                                HttpClient.sendGet(hook_off);
+                            } catch (Exception e) {
+                            }
+                        }
+                    }.start();
+                }
+
+                if (batteryPct <= min && !isConnected) {
+                    // showNotification("Battery","Battery full limit reached",null,new Intent(getApplicationContext(), MainActivity.class));
+                    new Thread() {
+                        @Override
+                        public void run() {
+                            super.run();
+                            try {
+                                //HttpClient.sendGet("https://ugoods.in/api/romyai/device.php?switch=switch0&value=0");
+                                HttpClient.sendGet(hook_on);
+                            } catch (Exception e) {
+                            }
+                        }
+                    }.start();
                 }
             }else{
-
+//                if (mediaPlayer != null) {
+//                    mediaPlayer.pause();
+//                }
+                ringtone.stop();
             }
-
-            Toast.makeText(context, "Changed "+isConnected, Toast.LENGTH_SHORT).show();
-
-            if(batteryPct >= max && isConnected){
-                // showNotification("Battery","Battery full limit reached",null,new Intent(getApplicationContext(), MainActivity.class));
-                if (mediaPlayer != null && !mediaPlayer.isPlaying()) {
-                    mediaPlayer.start();
-                }
-                new Thread(){
-                    @Override
-                    public void run() {
-                        super.run();
-                        try {
-                            //HttpClient.sendGet("https://ugoods.in/api/romyai/device.php?switch=switch0&value=1024");
-                            HttpClient.sendGet(hook_off);
-                        }catch (Exception e){}
-                    }
-                }.start();
-            }
-
-            if(batteryPct <= min && !isConnected){
-                // showNotification("Battery","Battery full limit reached",null,new Intent(getApplicationContext(), MainActivity.class));
-                new Thread(){
-                    @Override
-                    public void run() {
-                        super.run();
-                        try {
-                            //HttpClient.sendGet("https://ugoods.in/api/romyai/device.php?switch=switch0&value=0");
-                            HttpClient.sendGet(hook_on);
-                        }catch (Exception e){}
-                    }
-                }.start();
-            }
-
-            // tvfirst.setText(String.format("Battery Percentage: %.2f%%", batteryPct));
         }
     };
 
